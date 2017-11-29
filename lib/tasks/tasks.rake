@@ -271,7 +271,7 @@ namespace :synthea do
     options = { :headers => true, :header_converters => :symbol }
     towns = {}
     counties = {}
-    townfile = File.open('./resources/SUB-EST2015_25.csv', 'r:UTF-8')
+    townfile = File.open('./resources/Penn/SUB-EST2015_42.csv', 'r:UTF-8')
     CSV.foreach(townfile, options) do |row|
       if row[:primgeo_flag].to_i == 1
         town_name = row[:name].split.keep_if { |x| !%w(town city).include?(x.downcase) }.join(' ')
@@ -286,7 +286,7 @@ namespace :synthea do
     end
     townfile.close
     ageGroups = ['Total', (0..4), (5..9), (10..14), (15..19), (20..24), (25..29), (30..34), (35..39), (40..44), (45..49), (50..54), (55..59), (60..64), (65..69), (70..74), (75..79), (80..84), (85..110)]
-    countyfile = File.open('./resources/CC-EST2015-ALLDATA-25.csv', 'r:UTF-8')
+    countyfile = File.open('./resources/Penn/CC-EST2015-ALLDATA-42.csv', 'r:UTF-8')
     CSV.foreach(countyfile, options) do |row|
       # if (2015 estimate) && (total overall demographics)
       if row[:year].to_i == 8 && row[:agegrp].to_i.zero?
@@ -318,13 +318,14 @@ namespace :synthea do
     end
     countyfile.close
 
-    incomefile = File.open('./resources/ACS_14_5YR_S1901_with_ann.csv', 'r:UTF-8')
+    incomefile = File.open('./resources/Penn/ACS_14_5YR_S1901_with_ann.csv', 'r:UTF-8')
     CSV.foreach(incomefile, options) do |row|
       next if row[:geoid] == 'Id' # this CSV has 2 header rows
       next if row[:geodisplaylabel].include?('not defined')
 
       town_name = row[:geodisplaylabel].split(',')[0].split.keep_if { |x| !%w(town city).include?(x.downcase) }.join(' ')
 
+      next if towns[town_name] == nil
       # these numbers are given at the household level
       # the keys represent 10s of thousands, ie 50..75 means 50,000 to 75,000
       towns[town_name][:income] = { mean: row[:hc01_est_vc15].to_i,
@@ -342,13 +343,14 @@ namespace :synthea do
     end
     incomefile.close
 
-    educationfile = File.open('./resources/ACS_14_5YR_S1501_with_ann.csv', 'r:UTF-8')
+    educationfile = File.open('./resources/Penn/ACS_14_5YR_S1501_with_ann.csv', 'r:UTF-8')
     CSV.foreach(educationfile, options) do |row|
       next if row[:geoid] == 'Id' # this CSV has 2 header rows
       next if row[:geodisplaylabel].include?('not defined')
 
       town_name = row[:geodisplaylabel].split(',')[0].split.keep_if { |x| !%w(town city).include?(x.downcase) }.join(' ')
 
+      next if towns[town_name] == nil
       # the data allows for more granular categories (like 24-35 graduate degree) but these overall %s are good enough for our purposes
       towns[town_name][:education] = { less_than_hs: row[:hc01_est_vc02].to_f / 100,
                                        hs_degree: row[:hc01_est_vc03].to_f / 100,
